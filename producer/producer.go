@@ -9,6 +9,7 @@ import (
 	"github.com/IBM/sarama"
 	"time"
 	"go-kafka/producer/models"
+	"os"
 )
 
 const KafkaTopic = "Weather"
@@ -102,12 +103,13 @@ func runScript() {
 }
 
 func initializeProducer() (sarama.SyncProducer, error) {
+	kafkaAddress := os.Getenv("KAFKA_SERVER_ADDRESS")
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
 	config.Producer.Return.Successes = true
 
-	kafkaBrokers := []string{"localhost:9092"} // Add your Kafka broker address here
+	kafkaBrokers := []string{kafkaAddress} // Add your Kafka broker address here
 	producer, err := sarama.NewSyncProducer(kafkaBrokers, config)
 	if err != nil {
 		return nil, err

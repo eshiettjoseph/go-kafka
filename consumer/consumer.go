@@ -11,26 +11,8 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"fmt"
+	"go-kafka/consumer/models"
 )
-
-type WeatherData struct {
-	gorm.Model
-	City string `json:"city"`
-	CurrentCondition []CurrentCondition `json:"current_condition" gorm:"foreignkey:CurrentConditionID"`
-}
-
-type CurrentCondition struct {
-	gorm.Model
-	CurrentConditionID    uint
-	Humidity         string           `json:"humidity"`
-	LocalObsDateTime string           `json:"localObsDateTime"`
-	ObservationTime  string           `json:"observation_time"`
-	Pressure         string           `json:"pressure"`
-	TempC            string           `json:"temp_C"`
-	TempF            string           `json:"temp_F"`
-	WindspeedKmph    string           `json:"windspeedKmph"`
-	WindspeedMiles   string           `json:"windspeedMiles"`
-}
 
 type DB struct {
 	*gorm.DB
@@ -43,7 +25,7 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	db.AutoMigrate(&WeatherData{}, &CurrentCondition{})
+	db.AutoMigrate(&models.WeatherData{}, &models.CurrentCondition{})
 
 	kafkaAddress := os.Getenv("KAFKA_SERVER_ADDRESS")
 	consumerGroup := "weather-group"
@@ -88,15 +70,15 @@ func (h *ConsumerHandler) Cleanup(sarama.ConsumerGroupSession) error { return ni
 
 func (h *ConsumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	for msg := range claim.Messages() {
-		var weatherData WeatherData
+		var weatherData models.WeatherData
 		if err := json.Unmarshal(msg.Value, &weatherData); err != nil {
 			fmt.Printf("Error unmarshalling data: %v", err)
 			continue
 		}
 		
-		parsedWeatherData := WeatherData{
+		parsedWeatherData := models.WeatherData{
 			City: weatherData.City,
-			CurrentCondition:[]CurrentCondition{
+			CurrentCondition:[]models.CurrentCondition{
 				{
 					Humidity:         weatherData.CurrentCondition[0].Humidity,
 					TempC:            weatherData.CurrentCondition[0].TempC,
@@ -120,6 +102,6 @@ func (h *ConsumerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, clai
 	return nil
 }
 
-func (db *DB) SaveWeatherData(data WeatherData) error {
+func (db *DB) SaveWeatherData(data models.WeatherData) error {
 	return db.Create(&data).Error
 }
