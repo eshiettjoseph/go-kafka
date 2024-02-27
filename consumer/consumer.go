@@ -11,7 +11,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"fmt"
-	"go-kafka/consumer/models"
+	"consumer/models"
 )
 
 type DB struct {
